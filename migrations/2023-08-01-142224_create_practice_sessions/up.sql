@@ -3,6 +3,7 @@ CREATE TABLE practice_sessions (
     start_datetime DATETIME NOT NULL,
     duration_mins INT UNSIGNED NOT NULL,
     instrument VARCHAR(20) NOT NULL,
+    UNIQUE(start_datetime),
     PRIMARY KEY (practice_session_id)
 );
 
