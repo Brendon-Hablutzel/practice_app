@@ -1,6 +1,6 @@
+use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
 use diesel::{mysql::MysqlConnection, r2d2::Pool};
-use diesel::{prelude::*, sql_function};
 pub mod models;
 pub mod schema;
 use dotenvy::dotenv;
@@ -23,6 +23,3 @@ pub fn get_connection_pool() -> Pool<ConnectionManager<MysqlConnection>> {
         .build(manager)
         .expect("Should be able to build connection pool")
 }
-
-// danger?
-sql_function!(fn last_insert_id() -> Integer);
