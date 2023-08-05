@@ -262,6 +262,7 @@ async fn login(
     ))?;
 
     if login_success {
+        session.regenerate(); // this is supposed to make it more secure or something
         into_backend_err!(session.insert("user_id", user.user_id))?;
 
         Ok(Json(json!({ "login_success": login_success })))
