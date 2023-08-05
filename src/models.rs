@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::schema::{pieces, pieces_practiced, practice_sessions, users};
 use chrono;
 use diesel::prelude::*;
@@ -10,6 +12,16 @@ pub struct Piece {
     pub piece_id: i32,
     pub title: String,
     pub composer: String,
+}
+
+impl Display for Piece {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "({}) TITLE: {} COMPOSER: {}",
+            self.piece_id, self.title, self.composer
+        )
+    }
 }
 
 #[derive(Insertable, Deserialize)]
@@ -49,6 +61,20 @@ pub struct PracticeSession {
     pub user_id: i32,
 }
 
+impl Display for PracticeSession {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "({}) DATETIME: {} DURATION: {} INSTRUMENT: {} USER: {}",
+            self.practice_session_id,
+            self.start_datetime,
+            self.duration_mins,
+            self.instrument,
+            self.user_id
+        )
+    }
+}
+
 #[derive(Insertable, Deserialize)]
 #[diesel(table_name = practice_sessions)]
 #[diesel(check_for_backend(diesel::mysql::Mysql))]
@@ -66,4 +92,14 @@ pub struct User {
     pub user_id: i32,
     pub user_name: String,
     pub password_hash: String,
+}
+
+impl Display for User {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "({}) NAME: {} PASS: {}",
+            self.user_id, self.user_name, self.password_hash
+        )
+    }
 }
