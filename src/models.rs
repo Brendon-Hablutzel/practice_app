@@ -1,4 +1,4 @@
-use crate::schema::{pieces, pieces_practiced, practice_sessions};
+use crate::schema::{pieces, pieces_practiced, practice_sessions, users};
 use chrono;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -14,6 +14,7 @@ pub struct Piece {
 
 #[derive(Insertable, Deserialize)]
 #[diesel(table_name = pieces)]
+#[diesel(check_for_backend(diesel::mysql::Mysql))]
 pub struct NewPiece {
     pub title: String,
     pub composer: String,
@@ -25,13 +26,16 @@ pub struct NewPiece {
 pub struct PiecePracticed {
     pub practice_session_id: i32,
     pub piece_id: i32,
+    pub user_id: i32,
 }
 
 #[derive(Insertable, Deserialize)]
 #[diesel(table_name = pieces_practiced)]
+#[diesel(check_for_backend(diesel::mysql::Mysql))]
 pub struct NewPiecePracticed {
     pub practice_session_id: i32,
     pub piece_id: i32,
+    pub user_id: i32,
 }
 
 #[derive(Queryable, Selectable, Serialize)]
@@ -42,12 +46,24 @@ pub struct PracticeSession {
     pub start_datetime: chrono::NaiveDateTime,
     pub duration_mins: u32,
     pub instrument: String,
+    pub user_id: i32,
 }
 
 #[derive(Insertable, Deserialize)]
 #[diesel(table_name = practice_sessions)]
+#[diesel(check_for_backend(diesel::mysql::Mysql))]
 pub struct NewPracticeSession {
     pub start_datetime: chrono::NaiveDateTime,
     pub duration_mins: u32,
     pub instrument: String,
+    pub user_id: i32,
+}
+
+#[derive(Queryable, Selectable, Serialize)]
+#[diesel(table_name = users)]
+#[diesel(check_for_backend(diesel::mysql::Mysql))]
+pub struct User {
+    pub user_id: i32,
+    pub user_name: String,
+    pub password_hash: String,
 }
