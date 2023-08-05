@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
-use diesel::{mysql::MysqlConnection, r2d2::Pool};
+use diesel::{pg::PgConnection, r2d2::Pool};
 use models::{NewPiecePracticed, NewPracticeSession};
 use serde::Deserialize;
 pub mod models;
@@ -70,7 +70,7 @@ impl IntoResponse for AppError {
 #[derive(Deserialize)]
 pub struct PracticeSessionData {
     pub start_datetime: chrono::NaiveDateTime,
-    pub duration_mins: u32,
+    pub duration_mins: i32,
     pub instrument: String,
 }
 
@@ -107,18 +107,18 @@ pub struct Credentials {
     pub password: String,
 }
 
-pub fn establish_connection() -> Result<MysqlConnection, ConnectionError> {
+pub fn establish_connection() -> Result<PgConnection, ConnectionError> {
     dotenv().expect(".env should load");
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL env var should be set");
 
-    MysqlConnection::establish(&database_url)
+    PgConnection::establish(&database_url)
 }
 
-pub fn get_connection_pool() -> Pool<ConnectionManager<MysqlConnection>> {
+pub fn get_connection_pool() -> Pool<ConnectionManager<PgConnection>> {
     dotenv().expect(".env should load");
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL env var should be set");
 
-    let manager = ConnectionManager::<MysqlConnection>::new(database_url);
+    let manager = ConnectionManager::<PgConnection>::new(database_url);
 
     Pool::builder()
         .build(manager)

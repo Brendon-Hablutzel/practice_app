@@ -1,5 +1,5 @@
 CREATE TABLE users (
-    user_id INT NOT NULL AUTO_INCREMENT,
+    user_id SERIAL NOT NULL,
     user_name VARCHAR(255) NOT NULL,
     password_hash VARCHAR(100) NOT NULL,
     UNIQUE(user_name),
@@ -7,9 +7,9 @@ CREATE TABLE users (
 );
 
 CREATE TABLE practice_sessions (
-    practice_session_id INT NOT NULL AUTO_INCREMENT,
-    start_datetime DATETIME NOT NULL,
-    duration_mins INT UNSIGNED NOT NULL,
+    practice_session_id SERIAL NOT NULL,
+    start_datetime TIMESTAMP NOT NULL,
+    duration_mins INT NOT NULL,
     instrument VARCHAR(20) NOT NULL,
     user_id INT NOT NULL,
     UNIQUE(start_datetime),
@@ -18,7 +18,7 @@ CREATE TABLE practice_sessions (
 );
 
 CREATE TABLE pieces (
-    piece_id INT NOT NULL AUTO_INCREMENT,
+    piece_id SERIAL NOT NULL,
     title VARCHAR(255) NOT NULL,
     composer VARCHAR(40) NOT NULL,
     UNIQUE(title, composer),

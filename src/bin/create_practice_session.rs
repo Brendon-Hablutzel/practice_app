@@ -13,7 +13,7 @@ fn main() {
     let new_practice_session = NewPracticeSession {
         start_datetime: NaiveDateTime::parse_from_str(&args.next().unwrap(), "%Y-%m-%dT%H:%M:%S")
             .unwrap(),
-        duration_mins: args.next().unwrap().parse::<u32>().unwrap(),
+        duration_mins: args.next().unwrap().parse::<i32>().unwrap(),
         instrument: args.next().unwrap(),
         user_id: args.next().unwrap().parse::<i32>().unwrap(),
     };

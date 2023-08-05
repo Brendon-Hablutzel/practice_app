@@ -21,7 +21,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 struct AppState {
-    db: Pool<ConnectionManager<MysqlConnection>>,
+    db: Pool<ConnectionManager<PgConnection>>,
 }
 
 async fn root() -> &'static str {

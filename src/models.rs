@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Queryable, Selectable, Serialize)]
 #[diesel(table_name = pieces)]
-#[diesel(check_for_backend(diesel::mysql::Mysql))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Piece {
     pub piece_id: i32,
     pub title: String,
@@ -26,7 +26,7 @@ impl Display for Piece {
 
 #[derive(Insertable, Deserialize)]
 #[diesel(table_name = pieces)]
-#[diesel(check_for_backend(diesel::mysql::Mysql))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewPiece {
     pub title: String,
     pub composer: String,
@@ -34,7 +34,7 @@ pub struct NewPiece {
 
 #[derive(Queryable, Selectable, Serialize)]
 #[diesel(table_name = pieces_practiced)]
-#[diesel(check_for_backend(diesel::mysql::Mysql))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct PiecePracticed {
     pub practice_session_id: i32,
     pub piece_id: i32,
@@ -43,7 +43,7 @@ pub struct PiecePracticed {
 
 #[derive(Insertable, Deserialize)]
 #[diesel(table_name = pieces_practiced)]
-#[diesel(check_for_backend(diesel::mysql::Mysql))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewPiecePracticed {
     pub practice_session_id: i32,
     pub piece_id: i32,
@@ -52,11 +52,11 @@ pub struct NewPiecePracticed {
 
 #[derive(Queryable, Selectable, Serialize)]
 #[diesel(table_name = practice_sessions)]
-#[diesel(check_for_backend(diesel::mysql::Mysql))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct PracticeSession {
     pub practice_session_id: i32,
     pub start_datetime: chrono::NaiveDateTime,
-    pub duration_mins: u32,
+    pub duration_mins: i32,
     pub instrument: String,
     pub user_id: i32,
 }
@@ -77,17 +77,17 @@ impl Display for PracticeSession {
 
 #[derive(Insertable, Deserialize)]
 #[diesel(table_name = practice_sessions)]
-#[diesel(check_for_backend(diesel::mysql::Mysql))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewPracticeSession {
     pub start_datetime: chrono::NaiveDateTime,
-    pub duration_mins: u32,
+    pub duration_mins: i32,
     pub instrument: String,
     pub user_id: i32,
 }
 
 #[derive(Queryable, Selectable, Serialize)]
 #[diesel(table_name = users)]
-#[diesel(check_for_backend(diesel::mysql::Mysql))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct User {
     pub user_id: i32,
     pub user_name: String,

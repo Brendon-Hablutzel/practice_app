@@ -2,7 +2,7 @@
 
 diesel::table! {
     pieces (piece_id) {
-        piece_id -> Integer,
+        piece_id -> Int4,
         title -> Varchar,
         composer -> Varchar,
     }
@@ -10,25 +10,25 @@ diesel::table! {
 
 diesel::table! {
     pieces_practiced (practice_session_id, piece_id) {
-        practice_session_id -> Integer,
-        piece_id -> Integer,
-        user_id -> Integer,
+        practice_session_id -> Int4,
+        piece_id -> Int4,
+        user_id -> Int4,
     }
 }
 
 diesel::table! {
     practice_sessions (practice_session_id) {
-        practice_session_id -> Integer,
-        start_datetime -> Datetime,
-        duration_mins -> Unsigned<Integer>,
+        practice_session_id -> Int4,
+        start_datetime -> Timestamp,
+        duration_mins -> Int4,
         instrument -> Varchar,
-        user_id -> Integer,
+        user_id -> Int4,
     }
 }
 
 diesel::table! {
     users (user_id) {
-        user_id -> Integer,
+        user_id -> Int4,
         user_name -> Varchar,
         password_hash -> Varchar,
     }
