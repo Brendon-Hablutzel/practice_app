@@ -36,21 +36,6 @@ macro_rules! map_backend_err {
 }
 
 #[macro_export]
-macro_rules! map_db_insert_err {
-    ($insert_query:expr) => {
-        $insert_query.map_err(|e| match e {
-            DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
-                AppError::Conflict(e.to_string())
-            }
-            DatabaseError(DatabaseErrorKind::ForeignKeyViolation, _) => {
-                AppError::ClientError(e.to_string())
-            }
-            _ => AppError::BackendError(e.to_string()),
-        })
-    };
-}
-
-#[macro_export]
 macro_rules! get_db_conn {
     ($state:ident) => {
         map_backend_err!($state.db.clone().get())
@@ -77,10 +62,13 @@ pub enum AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         match self {
-            AppError::BackendError(info) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"success": false, "error": info})),
-            ),
+            AppError::BackendError(info) => {
+                println!("SERVER ERROR: {info}");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({"success": false, "error": "Server error"})),
+                )
+            }
             AppError::ClientError(info) => (
                 StatusCode::BAD_REQUEST,
                 Json(json!({"success": false, "error": info})),

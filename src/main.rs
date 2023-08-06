@@ -13,7 +13,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::result::{DatabaseErrorKind, Error, Error::DatabaseError};
 use practice_app::schema::{pieces, pieces_practiced, practice_sessions, users};
 use practice_app::{
-    get_connection_pool, get_db_conn, get_user_id, map_backend_err, map_db_insert_err, models::*,
+    get_connection_pool, get_db_conn, get_user_id, map_backend_err, models::*,
     verify_practice_session_ownership, AppError, Credentials, IncompleteNewPracticeSession,
     PracticeSessionWithPieces,
 };
@@ -87,10 +87,15 @@ async fn create_practice_session(
 
     let mut conn = get_db_conn!(state)?;
 
-    let inserted_practice_session: PracticeSession =
-        map_db_insert_err!(diesel::insert_into(practice_sessions::table)
-            .values(practice_session_data.make_insertable(current_user_id)?)
-            .get_result(&mut conn))?;
+    let inserted_practice_session: PracticeSession = diesel::insert_into(practice_sessions::table)
+        .values(practice_session_data.make_insertable(current_user_id)?)
+        .get_result(&mut conn)
+        .map_err(|e| match e {
+            DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
+                AppError::Conflict("A practice session at that time already exists".to_string())
+            }
+            _ => AppError::BackendError(e.to_string()),
+        })?;
 
     Ok(Json(
         json!({ "success": true, "practice_session": inserted_practice_session }),
@@ -146,9 +151,15 @@ async fn create_piece(
 
     let mut conn = get_db_conn!(state)?;
 
-    let inserted_piece: Piece = map_db_insert_err!(diesel::insert_into(pieces::table)
+    let inserted_piece: Piece = diesel::insert_into(pieces::table)
         .values(new_piece)
-        .get_result(&mut conn))?;
+        .get_result(&mut conn)
+        .map_err(|e| match e {
+            DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
+                AppError::Conflict("That piece is already registered in the database".to_string())
+            }
+            _ => AppError::BackendError(e.to_string()),
+        })?;
 
     Ok(Json(json!({ "success": true, "piece": inserted_piece })))
 }
@@ -186,9 +197,21 @@ async fn create_piece_practiced(
         current_user_id
     );
 
-    let inserted_mapping = map_db_insert_err!(diesel::insert_into(pieces_practiced::table)
+    let inserted_mapping = diesel::insert_into(pieces_practiced::table)
         .values(piece_practiced_mapping)
-        .execute(&mut conn))?;
+        .execute(&mut conn)
+        .map_err(|e| match e {
+            DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
+                AppError::Conflict("Entry already exists".to_string())
+            }
+            DatabaseError(DatabaseErrorKind::ForeignKeyViolation, _) => {
+                // "piece not found" must be the case because:
+                // 1: practice session existence is verified above using verify_practice_session_ownership!()
+                // 2: piece_id is the only foreign key remaining
+                AppError::ClientError("Piece not found".to_string())
+            }
+            _ => AppError::BackendError(e.to_string()),
+        })?;
 
     Ok(Json(
         json!({ "success": true, "piece_practiced": inserted_mapping }),
@@ -242,12 +265,18 @@ async fn create_user(
         &argon2::Config::default()
     ))?;
 
-    let inserted_user: User = map_db_insert_err!(diesel::insert_into(users::table)
+    let inserted_user: User = diesel::insert_into(users::table)
         .values((
             users::user_name.eq(credentials.user_name),
             users::password_hash.eq(hashed_password),
         ))
-        .get_result(&mut conn))?;
+        .get_result(&mut conn)
+        .map_err(|e| match e {
+            DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
+                AppError::Conflict("A user with that name already exists".to_string())
+            }
+            _ => AppError::BackendError(e.to_string()),
+        })?;
 
     Ok(Json(
         json!({ "success": true, "user": {"user_id": inserted_user.user_id, "user_name": inserted_user.user_name} }),
