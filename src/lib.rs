@@ -5,7 +5,7 @@ use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
 use diesel::{pg::PgConnection, r2d2::Pool};
-use models::{NewPiecePracticedMapping, NewPracticeSession, Piece, PracticeSession};
+use models::{NewPracticeSession, Piece, PracticeSession};
 use serde::{Deserialize, Serialize};
 pub mod models;
 pub mod schema;
@@ -88,7 +88,6 @@ pub struct IncompleteNewPracticeSession {
     pub start_datetime: chrono::NaiveDateTime,
     pub duration_mins: u32,
     pub instrument: String,
-    pub pieces_practiced_ids: Vec<i32>,
 }
 
 impl IncompleteNewPracticeSession {
@@ -101,19 +100,6 @@ impl IncompleteNewPracticeSession {
             instrument: self.instrument.clone(),
             user_id,
         })
-    }
-
-    pub fn get_pieces_practiced_mappings(
-        &self,
-        practice_session_id: i32,
-    ) -> Vec<NewPiecePracticedMapping> {
-        self.pieces_practiced_ids
-            .iter()
-            .map(|&piece_id| NewPiecePracticedMapping {
-                practice_session_id,
-                piece_id,
-            })
-            .collect()
     }
 }
 

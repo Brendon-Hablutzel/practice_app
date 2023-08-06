@@ -90,20 +90,9 @@ async fn create_practice_session(
             .values(practice_session_data.make_insertable(current_user_id)?)
             .get_result(&mut conn))?;
 
-    // NOTE: even if creating a piece practiced mapping fails,
-    // the practice session will have already been inserted above
-    let pieces_practiced: Vec<PiecePracticedMapping> =
-        handle_db_insert_err!(diesel::insert_into(pieces_practiced::table)
-            .values(
-                practice_session_data
-                    .get_pieces_practiced_mappings(inserted_practice_session.practice_session_id),
-            )
-            .get_results(&mut conn))?;
-
-    Ok(Json(json!({
-        "practice_session": inserted_practice_session,
-        "pieces_practiced": pieces_practiced
-    })))
+    Ok(Json(
+        json!({ "practice_session": inserted_practice_session }),
+    ))
 }
 
 async fn delete_practice_session(
