@@ -1,5 +1,6 @@
 use argon2;
 use axum::extract::{Path, State};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 use axum_sessions::{
@@ -241,8 +242,16 @@ async fn delete_piece_practiced(
 
 async fn create_user(
     State(state): State<Arc<AppState>>,
+    session: ReadableSession,
     Json(credentials): Json<Credentials>,
-) -> Result<Json<Value>, AppError> {
+) -> Result<Response, AppError> {
+    let current_user_id = get_user_id!(session);
+    if current_user_id.is_ok() {
+        return Err(AppError::Forbidden(
+            "Cannot create a new user while logged in".to_owned(),
+        ));
+    }
+
     let mut conn = get_db_conn!(state)?;
 
     let salt = rand::thread_rng().gen::<[u8; 16]>();
@@ -267,15 +276,21 @@ async fn create_user(
         })?;
 
     Ok(Json(
-        json!({ "user": {"user_id": inserted_user.user_id, "user_name": inserted_user.user_name} }),
-    ))
+        json!({ "success": true, "user": {"user_id": inserted_user.user_id, "user_name": inserted_user.user_name} }),
+    )
+    .into_response())
 }
 
 async fn login(
     State(state): State<Arc<AppState>>,
     mut session: WritableSession,
     Json(credentials): Json<Credentials>,
-) -> Result<Json<Value>, AppError> {
+) -> Result<Response, AppError> {
+    let current_user_id = get_user_id!(session);
+    if current_user_id.is_ok() {
+        return Ok(Redirect::to("/").into_response());
+    }
+
     let mut conn = get_db_conn!(state)?;
 
     let user: User = users::table
@@ -295,16 +310,18 @@ async fn login(
         session.regenerate(); // this is supposed to make it more secure or something
         into_backend_err!(session.insert("user_id", user.user_id))?;
 
-        Ok(Json(json!({ "login_success": login_success })))
+        Ok(Json(json!({ "success": login_success })).into_response())
     } else {
         Err(AppError::LoginError)
     }
 }
 
-async fn logout(mut session: WritableSession) -> Json<Value> {
+async fn logout(mut session: WritableSession) -> Result<Response, AppError> {
+    let _current_user_id = get_user_id!(session)?;
+
     session.destroy();
 
-    Json(json!({"success": true}))
+    Ok(Json(json!({"success": true})).into_response())
 }
 
 #[tokio::main]

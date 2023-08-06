@@ -64,20 +64,32 @@ impl IntoResponse for AppError {
         match self {
             AppError::BackendError(info) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": info})),
+                Json(json!({"success": false, "error": info})),
             ),
-            AppError::ClientError(info) => (StatusCode::BAD_REQUEST, Json(json!({"error": info}))),
+            AppError::ClientError(info) => (
+                StatusCode::BAD_REQUEST,
+                Json(json!({"success": false, "error": info})),
+            ),
             AppError::LoginError => (
                 StatusCode::UNAUTHORIZED,
-                Json(json!({"error": "Invalid login credentials"})),
+                Json(json!({"success": false, "error": "Invalid login credentials"})),
             ),
             AppError::Unauthorized => (
                 StatusCode::UNAUTHORIZED,
-                Json(json!({"error": "Unauthorized"})),
+                Json(json!({"success": false, "error": "Unauthorized"})),
             ),
-            AppError::Forbidden(info) => (StatusCode::FORBIDDEN, Json(json!({"error": info}))),
-            AppError::Conflict(info) => (StatusCode::CONFLICT, Json(json!({"error": info}))),
-            AppError::NotFound(info) => (StatusCode::NOT_FOUND, Json(json!({"error": info}))),
+            AppError::Forbidden(info) => (
+                StatusCode::FORBIDDEN,
+                Json(json!({"success": false, "error": info})),
+            ),
+            AppError::Conflict(info) => (
+                StatusCode::CONFLICT,
+                Json(json!({"success": false, "error": info})),
+            ),
+            AppError::NotFound(info) => (
+                StatusCode::NOT_FOUND,
+                Json(json!({"success": false, "error": info})),
+            ),
         }
         .into_response()
     }
