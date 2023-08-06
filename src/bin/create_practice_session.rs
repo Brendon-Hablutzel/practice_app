@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use practice_app::establish_connection;
-use practice_app::models::NewPracticeSession;
+use practice_app::models::{NewPracticeSession, PracticeSession};
 use practice_app::schema::practice_sessions;
 use std::env;
 
@@ -20,10 +20,10 @@ fn main() {
 
     let mut conn = establish_connection().unwrap();
 
-    let affected_rows = diesel::insert_into(practice_sessions::table)
+    let inserted_practice_session: PracticeSession = diesel::insert_into(practice_sessions::table)
         .values(new_practice_session)
-        .execute(&mut conn)
+        .get_result(&mut conn)
         .unwrap();
 
-    println!("Affected rows: {affected_rows}");
+    println!("Inserted practice session: {inserted_practice_session}");
 }

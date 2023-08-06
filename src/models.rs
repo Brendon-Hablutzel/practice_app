@@ -1,56 +1,31 @@
-use std::fmt::Display;
-
 use crate::schema::{pieces, pieces_practiced, practice_sessions, users};
 use chrono;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
 #[derive(Queryable, Selectable, Serialize)]
-#[diesel(table_name = pieces)]
+#[diesel(primary_key(user_id))]
+#[diesel(table_name = users)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct Piece {
-    pub piece_id: i32,
-    pub title: String,
-    pub composer: String,
+pub struct User {
+    pub user_id: i32,
+    pub user_name: String,
+    pub password_hash: String,
 }
 
-impl Display for Piece {
+impl Display for User {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "({}) TITLE: {} COMPOSER: {}",
-            self.piece_id, self.title, self.composer
+            "({}) NAME: {} PASS: {}",
+            self.user_id, self.user_name, self.password_hash
         )
     }
 }
 
-#[derive(Insertable, Deserialize)]
-#[diesel(table_name = pieces)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct NewPiece {
-    pub title: String,
-    pub composer: String,
-}
-
-#[derive(Queryable, Selectable, Serialize)]
-#[diesel(table_name = pieces_practiced)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct PiecePracticed {
-    pub practice_session_id: i32,
-    pub piece_id: i32,
-    pub user_id: i32,
-}
-
-#[derive(Insertable, Deserialize)]
-#[diesel(table_name = pieces_practiced)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct NewPiecePracticed {
-    pub practice_session_id: i32,
-    pub piece_id: i32,
-    pub user_id: i32,
-}
-
-#[derive(Queryable, Selectable, Serialize)]
+#[derive(Queryable, Selectable, Serialize, Identifiable)]
+#[diesel(primary_key(practice_session_id))]
 #[diesel(table_name = practice_sessions)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct PracticeSession {
@@ -85,21 +60,49 @@ pub struct NewPracticeSession {
     pub user_id: i32,
 }
 
-#[derive(Queryable, Selectable, Serialize)]
-#[diesel(table_name = users)]
+#[derive(Queryable, Selectable, Serialize, Identifiable)]
+#[diesel(table_name = pieces)]
+#[diesel(primary_key(piece_id))]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct User {
-    pub user_id: i32,
-    pub user_name: String,
-    pub password_hash: String,
+pub struct Piece {
+    pub piece_id: i32,
+    pub title: String,
+    pub composer: String,
 }
 
-impl Display for User {
+impl Display for Piece {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "({}) NAME: {} PASS: {}",
-            self.user_id, self.user_name, self.password_hash
+            "({}) TITLE: {} COMPOSER: {}",
+            self.piece_id, self.title, self.composer
         )
     }
+}
+
+#[derive(Insertable, Deserialize)]
+#[diesel(table_name = pieces)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct NewPiece {
+    pub title: String,
+    pub composer: String,
+}
+
+#[derive(Queryable, Selectable, Serialize, Associations, Identifiable)]
+#[diesel(primary_key(practice_session_id, piece_id))]
+#[diesel(belongs_to(PracticeSession))]
+#[diesel(belongs_to(Piece))]
+#[diesel(table_name = pieces_practiced)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct PiecePracticedMapping {
+    pub practice_session_id: i32,
+    pub piece_id: i32,
+}
+
+#[derive(Insertable, Deserialize)]
+#[diesel(table_name = pieces_practiced)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct NewPiecePracticedMapping {
+    pub practice_session_id: i32,
+    pub piece_id: i32,
 }

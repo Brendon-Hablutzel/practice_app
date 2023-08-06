@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 use practice_app::establish_connection;
-use practice_app::models::NewPiece;
+use practice_app::models::{NewPiece, Piece};
 use practice_app::schema::pieces;
 use std::env;
 
@@ -16,10 +16,10 @@ fn main() {
 
     let mut conn = establish_connection().unwrap();
 
-    let affected_rows = diesel::insert_into(pieces::table)
+    let inserted_piece: Piece = diesel::insert_into(pieces::table)
         .values(new_piece)
-        .execute(&mut conn)
+        .get_result(&mut conn)
         .unwrap();
 
-    println!("Affected rows: {affected_rows}");
+    println!("Inserted: {inserted_piece}");
 }

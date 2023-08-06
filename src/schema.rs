@@ -12,7 +12,6 @@ diesel::table! {
     pieces_practiced (practice_session_id, piece_id) {
         practice_session_id -> Int4,
         piece_id -> Int4,
-        user_id -> Int4,
     }
 }
 
@@ -36,7 +35,6 @@ diesel::table! {
 
 diesel::joinable!(pieces_practiced -> pieces (piece_id));
 diesel::joinable!(pieces_practiced -> practice_sessions (practice_session_id));
-diesel::joinable!(pieces_practiced -> users (user_id));
 diesel::joinable!(practice_sessions -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(

@@ -12,7 +12,7 @@ CREATE TABLE practice_sessions (
     duration_mins INT NOT NULL,
     instrument VARCHAR(20) NOT NULL,
     user_id INT NOT NULL,
-    UNIQUE(start_datetime),
+    UNIQUE(start_datetime, user_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id),
     PRIMARY KEY (practice_session_id)
 );
@@ -28,9 +28,7 @@ CREATE TABLE pieces (
 CREATE TABLE pieces_practiced (
     practice_session_id INT NOT NULL,
     piece_id INT NOT NULL,
-    user_id INT NOT NULL,
     FOREIGN KEY (practice_session_id) REFERENCES practice_sessions(practice_session_id),
     FOREIGN KEY (piece_id) REFERENCES pieces(piece_id),
-    FOREIGN KEY (user_id) REFERENCES users(user_id),
     PRIMARY KEY (practice_session_id, piece_id)
 );
