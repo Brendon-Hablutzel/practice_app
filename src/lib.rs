@@ -14,14 +14,29 @@ use serde_json::json;
 use std::env;
 
 #[macro_export]
-macro_rules! into_backend_err {
+macro_rules! verify_practice_session_ownership {
+    ($db_conn:expr, $practice_session_id:expr, $current_user_id:expr) => {
+        practice_sessions::table
+            .select(practice_sessions::user_id)
+            .filter(practice_sessions::user_id.eq($current_user_id))
+            .filter(practice_sessions::practice_session_id.eq($practice_session_id))
+            .first::<i32>($db_conn)
+            .map_err(|e| match e {
+                Error::NotFound => AppError::NotFound("Practice session not found".to_owned()),
+                _ => AppError::BackendError(e.to_string()),
+            })?;
+    };
+}
+
+#[macro_export]
+macro_rules! map_backend_err {
     ($fallible:expr) => {
         $fallible.map_err(|e| AppError::BackendError(e.to_string()))
     };
 }
 
 #[macro_export]
-macro_rules! handle_db_insert_err {
+macro_rules! map_db_insert_err {
     ($insert_query:expr) => {
         $insert_query.map_err(|e| match e {
             DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
@@ -38,7 +53,7 @@ macro_rules! handle_db_insert_err {
 #[macro_export]
 macro_rules! get_db_conn {
     ($state:ident) => {
-        into_backend_err!($state.db.clone().get())
+        map_backend_err!($state.db.clone().get())
     };
 }
 

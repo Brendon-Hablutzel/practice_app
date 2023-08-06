@@ -13,8 +13,9 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::result::{DatabaseErrorKind, Error, Error::DatabaseError};
 use practice_app::schema::{pieces, pieces_practiced, practice_sessions, users};
 use practice_app::{
-    get_connection_pool, get_db_conn, get_user_id, handle_db_insert_err, into_backend_err,
-    models::*, AppError, Credentials, IncompleteNewPracticeSession, PracticeSessionWithPieces,
+    get_connection_pool, get_db_conn, get_user_id, map_backend_err, map_db_insert_err, models::*,
+    verify_practice_session_ownership, AppError, Credentials, IncompleteNewPracticeSession,
+    PracticeSessionWithPieces,
 };
 use rand::{Rng, RngCore};
 use serde_json::{json, Value};
@@ -40,19 +41,19 @@ async fn get_practice_sessions(
 
     // fetch the desired practice sessions
     let practice_sessions: Vec<PracticeSession> = if let Some(path_params) = path_params {
-        into_backend_err!(practice_sessions::table
+        map_backend_err!(practice_sessions::table
             .filter(practice_sessions::user_id.eq(current_user_id))
             .filter(practice_sessions::practice_session_id.eq(path_params.0))
             .load::<PracticeSession>(&mut conn))?
     } else {
-        into_backend_err!(practice_sessions::table
+        map_backend_err!(practice_sessions::table
             .filter(practice_sessions::user_id.eq(current_user_id))
             .load::<PracticeSession>(&mut conn))?
     };
 
     // get the pieces practiced in the above practice sessions
     let pieces_practiced: Vec<Vec<(PiecePracticedMapping, Piece)>> =
-        into_backend_err!(PiecePracticedMapping::belonging_to(&practice_sessions)
+        map_backend_err!(PiecePracticedMapping::belonging_to(&practice_sessions)
             .inner_join(pieces::table)
             .load(&mut conn))?
         .grouped_by(&practice_sessions);
@@ -87,7 +88,7 @@ async fn create_practice_session(
     let mut conn = get_db_conn!(state)?;
 
     let inserted_practice_session: PracticeSession =
-        handle_db_insert_err!(diesel::insert_into(practice_sessions::table)
+        map_db_insert_err!(diesel::insert_into(practice_sessions::table)
             .values(practice_session_data.make_insertable(current_user_id)?)
             .get_result(&mut conn))?;
 
@@ -105,7 +106,7 @@ async fn delete_practice_session(
 
     let mut conn = get_db_conn!(state)?;
 
-    let rows_deleted: usize = into_backend_err!(diesel::delete(
+    let rows_deleted: usize = map_backend_err!(diesel::delete(
         practice_sessions::table
             .filter(practice_sessions::user_id.eq(current_user_id))
             .filter(practice_sessions::practice_session_id.eq(pratice_session_id))
@@ -124,11 +125,11 @@ async fn get_pieces(
     let mut conn = get_db_conn!(state)?;
 
     let pieces = if let Some(path_params) = path_params {
-        into_backend_err!(pieces::table
+        map_backend_err!(pieces::table
             .filter(pieces::piece_id.eq(path_params.0))
             .load::<Piece>(&mut conn))?
     } else {
-        into_backend_err!(pieces::table.load::<Piece>(&mut conn))?
+        map_backend_err!(pieces::table.load::<Piece>(&mut conn))?
     };
 
     Ok(Json(json!({ "success": true, "pieces": pieces })))
@@ -145,15 +146,9 @@ async fn create_piece(
 
     let mut conn = get_db_conn!(state)?;
 
-    let inserted_piece: Piece = diesel::insert_into(pieces::table)
+    let inserted_piece: Piece = map_db_insert_err!(diesel::insert_into(pieces::table)
         .values(new_piece)
-        .get_result(&mut conn)
-        .map_err(|e| match e {
-            DatabaseError(DatabaseErrorKind::UniqueViolation, _) => AppError::Conflict(
-                "An entry for a piece with that title and composer already exists".to_owned(),
-            ),
-            _ => AppError::BackendError(e.to_string()),
-        })?;
+        .get_result(&mut conn))?;
 
     Ok(Json(json!({ "success": true, "piece": inserted_piece })))
 }
@@ -164,7 +159,7 @@ async fn delete_piece(
 ) -> Result<Json<Value>, AppError> {
     let mut conn = get_db_conn!(state)?;
 
-    let rows_deleted: usize = into_backend_err!(diesel::delete(
+    let rows_deleted: usize = map_backend_err!(diesel::delete(
         pieces::table.filter(pieces::piece_id.eq(piece_id))
     )
     .execute(&mut conn))?;
@@ -183,33 +178,17 @@ async fn create_piece_practiced(
 
     let mut conn = get_db_conn!(state)?;
 
-    // verify that the specified practice session exists and belongs to the current user:
-    practice_sessions::table
-        .select(practice_sessions::user_id)
-        .filter(practice_sessions::user_id.eq(current_user_id))
-        .filter(
-            practice_sessions::practice_session_id.eq(piece_practiced_mapping.practice_session_id),
-        )
-        .first::<i32>(&mut conn)
-        .map_err(|e| match e {
-            Error::NotFound => AppError::NotFound("Practice session not found".to_owned()),
-            _ => AppError::BackendError(e.to_string()),
-        })?;
+    // verify that the practice session in the mapping belongs to the current user
+    // (this macro uses ? to return an error if it does not)
+    verify_practice_session_ownership!(
+        &mut conn,
+        piece_practiced_mapping.practice_session_id,
+        current_user_id
+    );
 
-    let inserted_mapping = diesel::insert_into(pieces_practiced::table)
+    let inserted_mapping = map_db_insert_err!(diesel::insert_into(pieces_practiced::table)
         .values(piece_practiced_mapping)
-        .execute(&mut conn)
-        .map_err(|e| match e {
-            DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
-                AppError::Conflict(
-                    "A piece practiced mapping with those piece and practice session ids already exists".to_owned()
-                )
-            }
-            DatabaseError(DatabaseErrorKind::ForeignKeyViolation, _) => {
-                AppError::ClientError(e.to_string())
-            }
-            _ => AppError::BackendError(e.to_string()),
-        })?;
+        .execute(&mut conn))?;
 
     Ok(Json(
         json!({ "success": true, "piece_practiced": inserted_mapping }),
@@ -226,17 +205,10 @@ async fn delete_piece_practiced(
     let mut conn = get_db_conn!(state)?;
 
     // verify that the practice session in the mapping belongs to the current user
-    practice_sessions::table
-        .select(practice_sessions::user_id)
-        .filter(practice_sessions::user_id.eq(current_user_id))
-        .filter(practice_sessions::practice_session_id.eq(practice_session_id))
-        .first::<i32>(&mut conn)
-        .map_err(|e| match e {
-            Error::NotFound => AppError::NotFound("Practice session not found".to_owned()),
-            _ => AppError::BackendError(e.to_string()),
-        })?;
+    // (this macro uses ? to return an error if it does not)
+    verify_practice_session_ownership!(&mut conn, practice_session_id, current_user_id);
 
-    let rows_deleted = into_backend_err!(diesel::delete(
+    let rows_deleted = map_backend_err!(diesel::delete(
         pieces_practiced::table
             .filter(pieces_practiced::piece_id.eq(piece_id))
             .filter(pieces_practiced::practice_session_id.eq(practice_session_id)),
@@ -264,24 +236,18 @@ async fn create_user(
 
     let salt = rand::thread_rng().gen::<[u8; 16]>();
 
-    let hashed_password = into_backend_err!(argon2::hash_encoded(
+    let hashed_password = map_backend_err!(argon2::hash_encoded(
         credentials.password.as_bytes(),
         &salt,
         &argon2::Config::default()
     ))?;
 
-    let inserted_user: User = diesel::insert_into(users::table)
+    let inserted_user: User = map_db_insert_err!(diesel::insert_into(users::table)
         .values((
             users::user_name.eq(credentials.user_name),
             users::password_hash.eq(hashed_password),
         ))
-        .get_result(&mut conn)
-        .map_err(|e| match e {
-            DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
-                AppError::Conflict("That username already exists".to_owned())
-            }
-            _ => AppError::BackendError(e.to_string()),
-        })?;
+        .get_result(&mut conn))?;
 
     Ok(Json(
         json!({ "success": true, "user": {"user_id": inserted_user.user_id, "user_name": inserted_user.user_name} }),
@@ -309,14 +275,14 @@ async fn login(
             _ => AppError::BackendError(e.to_string()),
         })?;
 
-    let login_success = into_backend_err!(argon2::verify_encoded(
+    let login_success = map_backend_err!(argon2::verify_encoded(
         &user.password_hash,
         credentials.password.as_bytes()
     ))?;
 
     if login_success {
         session.regenerate(); // this is supposed to make it more secure or something
-        into_backend_err!(session.insert("user_id", user.user_id))?;
+        map_backend_err!(session.insert("user_id", user.user_id))?;
 
         Ok(Json(json!({ "success": login_success })).into_response())
     } else {
