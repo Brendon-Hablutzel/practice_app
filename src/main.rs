@@ -73,7 +73,7 @@ async fn get_practice_sessions(
         .collect();
 
     Ok(Json(
-        json!({"practice_sessions": practice_sessions_with_pieces}),
+        json!({"success": true, "practice_sessions": practice_sessions_with_pieces}),
     ))
 }
 
@@ -92,7 +92,7 @@ async fn create_practice_session(
             .get_result(&mut conn))?;
 
     Ok(Json(
-        json!({ "practice_session": inserted_practice_session }),
+        json!({ "success": true, "practice_session": inserted_practice_session }),
     ))
 }
 
@@ -112,7 +112,9 @@ async fn delete_practice_session(
     )
     .execute(&mut conn))?;
 
-    Ok(Json(json!({ "num_deleted": rows_deleted })))
+    Ok(Json(
+        json!({ "success": rows_deleted > 0, "num_deleted": rows_deleted }),
+    ))
 }
 
 async fn get_pieces(
@@ -129,7 +131,7 @@ async fn get_pieces(
         into_backend_err!(pieces::table.load::<Piece>(&mut conn))?
     };
 
-    Ok(Json(json!({ "pieces": pieces })))
+    Ok(Json(json!({ "success": true, "pieces": pieces })))
 }
 
 async fn create_piece(
@@ -153,7 +155,7 @@ async fn create_piece(
             _ => AppError::BackendError(e.to_string()),
         })?;
 
-    Ok(Json(json!({ "piece": inserted_piece })))
+    Ok(Json(json!({ "success": true, "piece": inserted_piece })))
 }
 
 async fn delete_piece(
@@ -167,7 +169,9 @@ async fn delete_piece(
     )
     .execute(&mut conn))?;
 
-    Ok(Json(json!({ "num_deleted": rows_deleted })))
+    Ok(Json(
+        json!({ "success": rows_deleted > 0, "num_deleted": rows_deleted }),
+    ))
 }
 
 async fn create_piece_practiced(
@@ -207,7 +211,9 @@ async fn create_piece_practiced(
             _ => AppError::BackendError(e.to_string()),
         })?;
 
-    Ok(Json(json!({ "piece_practiced": inserted_mapping })))
+    Ok(Json(
+        json!({ "success": true, "piece_practiced": inserted_mapping }),
+    ))
 }
 
 async fn delete_piece_practiced(
@@ -237,7 +243,9 @@ async fn delete_piece_practiced(
     )
     .execute(&mut conn))?;
 
-    Ok(Json(json!({ "num_deleted": rows_deleted })))
+    Ok(Json(
+        json!({ "success": rows_deleted > 0, "num_deleted": rows_deleted }),
+    ))
 }
 
 async fn create_user(
