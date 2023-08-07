@@ -99,6 +99,16 @@ pub struct PiecePracticedMapping {
     pub piece_id: i32,
 }
 
+impl Display for PiecePracticedMapping {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "PRACTICE SESSION: {} PIECE: {}",
+            self.practice_session_id, self.piece_id
+        )
+    }
+}
+
 #[derive(Insertable, Deserialize)]
 #[diesel(table_name = pieces_practiced)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
