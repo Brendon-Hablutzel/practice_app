@@ -4,8 +4,10 @@ use axum::Json;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
+use diesel::result::Error;
 use diesel::{pg::PgConnection, r2d2::Pool};
 use models::{NewPracticeSession, Piece, PracticeSession};
+use schema::practice_sessions;
 use serde::{Deserialize, Serialize};
 pub mod models;
 pub mod schema;
@@ -13,20 +15,37 @@ use dotenvy::dotenv;
 use serde_json::json;
 use std::env;
 
-#[macro_export]
-macro_rules! verify_practice_session_ownership {
-    ($db_conn:expr, $practice_session_id:expr, $current_user_id:expr) => {
-        practice_sessions::table
-            .select(practice_sessions::user_id)
-            .filter(practice_sessions::user_id.eq($current_user_id))
-            .filter(practice_sessions::practice_session_id.eq($practice_session_id))
-            .first::<i32>($db_conn)
-            .map_err(|e| match e {
-                Error::NotFound => AppError::NotFound("Practice session not found".to_owned()),
-                _ => AppError::BackendError(e.to_string()),
-            })?;
-    };
+// returns the practice session id if the user does own it, otherwise errors
+pub fn verify_practice_session_ownership(
+    conn: &mut PgConnection,
+    practice_session_id: i32,
+    current_user_id: i32,
+) -> Result<i32, AppError> {
+    practice_sessions::table
+        .select(practice_sessions::user_id)
+        .filter(practice_sessions::user_id.eq(current_user_id))
+        .filter(practice_sessions::practice_session_id.eq(practice_session_id))
+        .first::<i32>(conn)
+        .map_err(|e| match e {
+            Error::NotFound => AppError::NotFound("Practice session not found".to_owned()),
+            _ => AppError::BackendError(e.to_string()),
+        })
 }
+
+// #[macro_export]
+// macro_rules! verify_practice_session_ownership {
+//     ($db_conn:expr, $practice_session_id:expr, $current_user_id:expr) => {
+//         practice_sessions::table
+//             .select(practice_sessions::user_id)
+//             .filter(practice_sessions::user_id.eq($current_user_id))
+//             .filter(practice_sessions::practice_session_id.eq($practice_session_id))
+//             .first::<i32>($db_conn)
+//             .map_err(|e| match e {
+//                 Error::NotFound => AppError::NotFound("Practice session not found".to_owned()),
+//                 _ => AppError::BackendError(e.to_string()),
+//             })?;
+//     };
+// }
 
 #[macro_export]
 macro_rules! map_backend_err {

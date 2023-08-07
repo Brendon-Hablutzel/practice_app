@@ -1,5 +1,5 @@
 use argon2;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{delete, get, post};
 use axum::{Json, Router};
@@ -8,6 +8,7 @@ use axum_sessions::{
     extractors::{ReadableSession, WritableSession},
     SessionLayer,
 };
+use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::result::{DatabaseErrorKind, Error, Error::DatabaseError};
@@ -18,6 +19,7 @@ use practice_app::{
     PracticeSessionWithPieces,
 };
 use rand::{Rng, RngCore};
+use serde::Deserialize;
 use serde_json::{json, Value};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
@@ -30,26 +32,63 @@ async fn root() -> &'static str {
     "practice app"
 }
 
+#[derive(Deserialize)]
+struct PracticeSessionsQueryParams {
+    practice_session_id: Option<i32>,
+    min_datetime: Option<NaiveDateTime>,
+    max_datetime: Option<NaiveDateTime>,
+    min_duration_mins: Option<u32>,
+    max_duration_mins: Option<u32>,
+    instrument: Option<String>,
+}
+
 async fn get_practice_sessions(
     State(state): State<Arc<AppState>>,
     session: ReadableSession,
-    path_params: Option<Path<i32>>,
+    query_params: Query<PracticeSessionsQueryParams>,
 ) -> Result<Json<Value>, AppError> {
     let current_user_id = get_user_id!(session)?;
 
     let mut conn = get_db_conn!(state)?;
 
-    // fetch the desired practice sessions
-    let practice_sessions: Vec<PracticeSession> = if let Some(path_params) = path_params {
-        map_backend_err!(practice_sessions::table
-            .filter(practice_sessions::user_id.eq(current_user_id))
-            .filter(practice_sessions::practice_session_id.eq(path_params.0))
-            .load::<PracticeSession>(&mut conn))?
-    } else {
-        map_backend_err!(practice_sessions::table
-            .filter(practice_sessions::user_id.eq(current_user_id))
-            .load::<PracticeSession>(&mut conn))?
-    };
+    let mut query = practice_sessions::table
+        .into_boxed()
+        .filter(practice_sessions::user_id.eq(current_user_id));
+
+    if let Some(practice_session_id) = query_params.practice_session_id {
+        query = query.filter(practice_sessions::practice_session_id.eq(practice_session_id));
+    }
+
+    if let Some(min_datetime) = query_params.min_datetime {
+        query = query.filter(practice_sessions::start_datetime.ge(min_datetime));
+    }
+
+    if let Some(max_datetime) = query_params.max_datetime {
+        query = query.filter(practice_sessions::start_datetime.le(max_datetime));
+    }
+
+    if let Some(min_duration_mins) = query_params.min_duration_mins {
+        query = query.filter(practice_sessions::duration_mins.ge(
+            i32::try_from(min_duration_mins).map_err(|_| {
+                AppError::ClientError("Invalid value for min_duration_mins".to_owned())
+            })?,
+        ));
+    }
+
+    if let Some(max_duration_mins) = query_params.max_duration_mins {
+        query = query.filter(practice_sessions::duration_mins.le(
+            i32::try_from(max_duration_mins).map_err(|_| {
+                AppError::ClientError("Invalid value for max_duration_mins".to_owned())
+            })?,
+        ));
+    }
+
+    if let Some(instrument) = &query_params.instrument {
+        query = query.filter(practice_sessions::instrument.eq(instrument));
+    }
+
+    let practice_sessions: Vec<PracticeSession> =
+        map_backend_err!(query.load::<PracticeSession>(&mut conn))?;
 
     // get the pieces practiced in the above practice sessions
     let pieces_practiced: Vec<Vec<(PiecePracticedMapping, Piece)>> =
@@ -123,19 +162,34 @@ async fn delete_practice_session(
     ))
 }
 
+#[derive(Deserialize)]
+struct GetPiecesQueryParams {
+    piece_id: Option<i32>,
+    title: Option<String>,    // match containing
+    composer: Option<String>, // match exact
+}
+
 async fn get_pieces(
     State(state): State<Arc<AppState>>,
-    path_params: Option<Path<i32>>,
+    query_params: Query<GetPiecesQueryParams>,
 ) -> Result<Json<Value>, AppError> {
     let mut conn = get_db_conn!(state)?;
 
-    let pieces = if let Some(path_params) = path_params {
-        map_backend_err!(pieces::table
-            .filter(pieces::piece_id.eq(path_params.0))
-            .load::<Piece>(&mut conn))?
-    } else {
-        map_backend_err!(pieces::table.load::<Piece>(&mut conn))?
-    };
+    let mut query = pieces::table.into_boxed();
+
+    if let Some(piece_id) = query_params.piece_id {
+        query = query.filter(pieces::piece_id.eq(piece_id));
+    }
+
+    if let Some(title) = &query_params.title {
+        query = query.filter(pieces::title.ilike(format!("%{}%", title)));
+    }
+
+    if let Some(composer) = &query_params.composer {
+        query = query.filter(pieces::title.ilike(composer))
+    }
+
+    let pieces: Vec<Piece> = map_backend_err!(query.load::<Piece>(&mut conn))?;
 
     Ok(Json(json!({ "success": true, "pieces": pieces })))
 }
@@ -190,12 +244,11 @@ async fn create_piece_practiced(
     let mut conn = get_db_conn!(state)?;
 
     // verify that the practice session in the mapping belongs to the current user
-    // (this macro uses ? to return an error if it does not)
-    verify_practice_session_ownership!(
+    let _practice_session_id = verify_practice_session_ownership(
         &mut conn,
         piece_practiced_mapping.practice_session_id,
-        current_user_id
-    );
+        current_user_id,
+    )?;
 
     let inserted_mapping = diesel::insert_into(pieces_practiced::table)
         .values(piece_practiced_mapping)
@@ -228,8 +281,9 @@ async fn delete_piece_practiced(
     let mut conn = get_db_conn!(state)?;
 
     // verify that the practice session in the mapping belongs to the current user
-    // (this macro uses ? to return an error if it does not)
-    verify_practice_session_ownership!(&mut conn, practice_session_id, current_user_id);
+    // verify that the practice session in the mapping belongs to the current user
+    let _practice_session_id =
+        verify_practice_session_ownership(&mut conn, practice_session_id, current_user_id)?;
 
     let rows_deleted = map_backend_err!(diesel::delete(
         pieces_practiced::table
@@ -343,12 +397,7 @@ async fn main() {
     let app = Router::new()
         .route("/", get(root))
         .route("/get_practice_sessions", get(get_practice_sessions))
-        .route(
-            "/get_practice_sessions/:practice_session_id",
-            get(get_practice_sessions),
-        )
         .route("/get_pieces", get(get_pieces))
-        .route("/get_pieces/:piece_id", get(get_pieces))
         .route("/create_practice_session", post(create_practice_session))
         .route("/create_piece", post(create_piece))
         .route("/create_piece_practiced", post(create_piece_practiced))
