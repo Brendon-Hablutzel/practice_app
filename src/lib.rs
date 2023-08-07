@@ -32,21 +32,6 @@ pub fn verify_practice_session_ownership(
         })
 }
 
-// #[macro_export]
-// macro_rules! verify_practice_session_ownership {
-//     ($db_conn:expr, $practice_session_id:expr, $current_user_id:expr) => {
-//         practice_sessions::table
-//             .select(practice_sessions::user_id)
-//             .filter(practice_sessions::user_id.eq($current_user_id))
-//             .filter(practice_sessions::practice_session_id.eq($practice_session_id))
-//             .first::<i32>($db_conn)
-//             .map_err(|e| match e {
-//                 Error::NotFound => AppError::NotFound("Practice session not found".to_owned()),
-//                 _ => AppError::BackendError(e.to_string()),
-//             })?;
-//     };
-// }
-
 #[macro_export]
 macro_rules! map_backend_err {
     ($fallible:expr) => {
