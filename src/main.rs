@@ -309,6 +309,10 @@ async fn create_user(
         ));
     }
 
+    if credentials.user_name.len() > 100 {
+        return Err(AppError::ClientError("User name too long".to_owned()));
+    }
+
     let mut conn = get_db_conn!(state)?;
 
     let salt = rand::thread_rng().gen::<[u8; 16]>();
