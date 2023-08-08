@@ -1,6 +1,6 @@
 use argon2;
 use axum::extract::{Path, Query, State};
-use axum::response::{IntoResponse, Redirect, Response};
+use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 use axum_sessions::{
@@ -26,10 +26,6 @@ use std::sync::Arc;
 
 struct AppState {
     db: Pool<ConnectionManager<PgConnection>>,
-}
-
-async fn root() -> &'static str {
-    "practice app"
 }
 
 #[derive(Deserialize)]
@@ -281,7 +277,6 @@ async fn delete_piece_practiced(
     let mut conn = get_db_conn!(state)?;
 
     // verify that the practice session in the mapping belongs to the current user
-    // verify that the practice session in the mapping belongs to the current user
     let _practice_session_id =
         verify_practice_session_ownership(&mut conn, practice_session_id, current_user_id)?;
 
@@ -349,7 +344,7 @@ async fn login(
 ) -> Result<Response, AppError> {
     let current_user_id = get_user_id!(session);
     if current_user_id.is_ok() {
-        return Ok(Redirect::to("/").into_response());
+        return Err(AppError::Forbidden("Already logged in".to_owned()));
     }
 
     let mut conn = get_db_conn!(state)?;
@@ -399,7 +394,6 @@ async fn main() {
     });
 
     let app = Router::new()
-        .route("/", get(root))
         .route("/get_practice_sessions", get(get_practice_sessions))
         .route("/get_pieces", get(get_pieces))
         .route("/create_practice_session", post(create_practice_session))
