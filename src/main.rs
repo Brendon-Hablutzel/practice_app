@@ -38,6 +38,7 @@ struct PracticeSessionsQueryParams {
     instrument: Option<String>,
 }
 
+// add option for whether to include pieces practiced?
 async fn get_practice_sessions(
     State(state): State<Arc<AppState>>,
     session: ReadableSession,
@@ -366,7 +367,12 @@ async fn login(
         session.regenerate(); // this is supposed to make it more secure or something
         map_backend_err!(session.insert("user_id", user.user_id))?;
 
-        Ok(Json(json!({ "success": login_success })).into_response())
+        Ok(Json(json!({
+            "success": login_success,
+            "user_id": user.user_id,
+            "user_name": user.user_name
+        }))
+        .into_response())
     } else {
         Err(AppError::LoginError)
     }
@@ -393,7 +399,7 @@ async fn main() {
         db: get_connection_pool(),
     });
 
-    let app = Router::new()
+    let api_routes = Router::new()
         .route("/get_practice_sessions", get(get_practice_sessions))
         .route("/get_pieces", get(get_pieces))
         .route("/create_practice_session", post(create_practice_session))
@@ -414,8 +420,10 @@ async fn main() {
         .layer(session_layer)
         .with_state(shared_state);
 
+    let app = Router::new().nest("/api", api_routes);
+
     let ip = Ipv4Addr::new(0, 0, 0, 0);
-    let addr = SocketAddr::new(IpAddr::V4(ip), 3000);
+    let addr = SocketAddr::new(IpAddr::V4(ip), 5000);
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
