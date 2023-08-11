@@ -95,7 +95,7 @@ async fn get_practice_sessions(
         .grouped_by(&practice_sessions);
 
     // join together the practice sessions with the pieces practiced in each
-    let practice_sessions_with_pieces: Vec<PracticeSessionWithPieces> = practice_sessions
+    let practice_sessions: Vec<PracticeSessionWithPieces> = practice_sessions
         .into_iter()
         .zip(pieces_practiced)
         .map(|(practice_session, pieces_practiced)| {
@@ -110,7 +110,7 @@ async fn get_practice_sessions(
         .collect();
 
     Ok(Json(
-        json!({"success": true, "practice_sessions": practice_sessions_with_pieces}),
+        json!({"success": true, "practice_sessions": practice_sessions}),
     ))
 }
 
