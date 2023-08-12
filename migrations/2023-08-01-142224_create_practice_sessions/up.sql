@@ -9,7 +9,7 @@ CREATE TABLE users (
 CREATE TABLE practice_sessions (
     practice_session_id SERIAL NOT NULL,
     start_datetime TIMESTAMP NOT NULL,
-    duration_mins INT NOT NULL,
+    duration_mins INT NOT NULL, -- change this to INTERVAL type?
     instrument VARCHAR(20) NOT NULL,
     user_id INT NOT NULL,
     UNIQUE(start_datetime, user_id),
