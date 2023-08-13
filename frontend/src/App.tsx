@@ -1,26 +1,39 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "./Login";
+import Home from "./Home";
+import Logout from "./Logout";
+import { AuthProtected, AuthProvider } from "./Auth";
+import PracticeSessions from "./PracticeSessions";
+import Pieces from "./Pieces";
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    return (
+        <AuthProvider>
+            <BrowserRouter>
+                <Routes>
+                    <Route path="/login" Component={Login} />
+                    <Route path="/logout" Component={Logout} />
+                    <Route
+                        path="/practice-sessions"
+                        element={
+                            <AuthProtected>
+                                <PracticeSessions />
+                            </AuthProtected>
+                        }
+                    />
+                    <Route
+                        path="/pieces"
+                        element={
+                            <AuthProtected>
+                                <Pieces />
+                            </AuthProtected>
+                        }
+                    />
+                    <Route path="/" Component={Home} />
+                </Routes>
+            </BrowserRouter>
+        </AuthProvider>
+    );
 }
 
 export default App;
