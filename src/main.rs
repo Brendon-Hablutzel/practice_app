@@ -43,7 +43,6 @@ struct PracticeSessionsQueryParams {
     instrument: Option<String>,
 }
 
-// add option for whether to include pieces practiced?
 async fn get_practice_sessions(
     State(state): State<Arc<AppState>>,
     session: ReadableSession,
