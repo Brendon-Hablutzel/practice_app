@@ -1,5 +1,7 @@
 use argon2;
 use axum::extract::{Path, Query, State};
+use axum::http::header::CONTENT_TYPE;
+use axum::http::{HeaderValue, Method};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, post};
 use axum::{Json, Router};
@@ -12,6 +14,7 @@ use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::result::{DatabaseErrorKind, Error, Error::DatabaseError};
+use dotenvy::dotenv;
 use practice_app::schema::{pieces, pieces_practiced, practice_sessions, users};
 use practice_app::{
     get_connection_pool, get_db_conn, get_user_id, map_backend_err, models::*,
@@ -21,8 +24,10 @@ use practice_app::{
 use rand::{Rng, RngCore};
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
+use tower_http::cors::CorsLayer;
 
 struct AppState {
     db: Pool<ConnectionManager<PgConnection>>,
@@ -399,6 +404,15 @@ async fn main() {
         db: get_connection_pool(),
     });
 
+    dotenv().expect(".env should load");
+    let frontend_url = env::var("FRONTEND_URL").expect("FRONTEND_URL env var should be set");
+
+    let cors = CorsLayer::new()
+        .allow_methods([Method::GET, Method::POST])
+        .allow_headers([CONTENT_TYPE])
+        .allow_credentials(true)
+        .allow_origin(frontend_url.parse::<HeaderValue>().unwrap());
+
     let api_routes = Router::new()
         .route("/get_practice_sessions", get(get_practice_sessions))
         .route("/get_pieces", get(get_pieces))
@@ -418,6 +432,7 @@ async fn main() {
         .route("/login", post(login))
         .route("/logout", get(logout))
         .layer(session_layer)
+        .layer(cors)
         .with_state(shared_state);
 
     let app = Router::new().nest("/api", api_routes);
