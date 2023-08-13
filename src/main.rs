@@ -1,7 +1,8 @@
 use argon2;
 use axum::extract::{Path, Query, State};
 use axum::http::header::CONTENT_TYPE;
-use axum::http::{HeaderValue, Method};
+use axum::http::{HeaderValue, Method, Request};
+use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, post};
 use axum::{Json, Router};
@@ -15,6 +16,7 @@ use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::result::{DatabaseErrorKind, Error, Error::DatabaseError};
 use dotenvy::dotenv;
+use log::info;
 use practice_app::schema::{pieces, pieces_practiced, practice_sessions, users};
 use practice_app::{
     get_connection_pool, get_db_conn, get_user_id, map_backend_err, models::*,
@@ -390,9 +392,31 @@ async fn logout(mut session: WritableSession) -> Result<Response, AppError> {
     Ok(Json(json!({"success": true})).into_response())
 }
 
+async fn logger_middleware<B>(request: Request<B>, next: Next<B>) -> Response {
+    let method = request.method().clone();
+    let uri = request.uri().clone();
+
+    info!("Received request: {} {}", method, uri);
+
+    let response = next.run(request).await;
+
+    info!(
+        "Processed request {} {}, sending response: {}",
+        method,
+        uri,
+        response.status()
+    );
+
+    response
+}
+
 #[tokio::main]
 async fn main() {
+    env::set_var("RUST_LOG", "info");
+    env_logger::init();
+
     let store = MemoryStore::new();
+    info!("Initialized memory store for sessions");
 
     let mut secret = [0u8; 64];
     rand::thread_rng().fill_bytes(&mut secret);
@@ -402,6 +426,7 @@ async fn main() {
     let shared_state = Arc::new(AppState {
         db: get_connection_pool(),
     });
+    info!("Initialized database connection");
 
     dotenv().expect(".env should load");
     let frontend_url = env::var("FRONTEND_URL").expect("FRONTEND_URL env var should be set");
@@ -412,32 +437,35 @@ async fn main() {
         .allow_credentials(true)
         .allow_origin(frontend_url.parse::<HeaderValue>().unwrap());
 
-    let api_routes = Router::new()
-        .route("/get_practice_sessions", get(get_practice_sessions))
-        .route("/get_pieces", get(get_pieces))
-        .route("/create_practice_session", post(create_practice_session))
-        .route("/create_piece", post(create_piece))
-        .route("/create_piece_practiced", post(create_piece_practiced))
+    let app = Router::new()
+        .route("/api/get_practice_sessions", get(get_practice_sessions))
+        .route("/api/get_pieces", get(get_pieces))
         .route(
-            "/delete_practice_session/:practice_session_id",
+            "/api/create_practice_session",
+            post(create_practice_session),
+        )
+        .route("/api/create_piece", post(create_piece))
+        .route("/api/create_piece_practiced", post(create_piece_practiced))
+        .route(
+            "/api/delete_practice_session/:practice_session_id",
             delete(delete_practice_session),
         )
-        .route("/delete_piece/:piece_id", delete(delete_piece))
+        .route("/api/delete_piece/:piece_id", delete(delete_piece))
         .route(
-            "/delete_piece_practiced/:practice_session_id_to_delete/:piece_id_to_delete",
+            "/api/delete_piece_practiced/:practice_session_id_to_delete/:piece_id_to_delete",
             delete(delete_piece_practiced),
         )
-        .route("/create_user", post(create_user))
-        .route("/login", post(login))
-        .route("/logout", get(logout))
+        .route("/api/create_user", post(create_user))
+        .route("/api/login", post(login))
+        .route("/api/logout", get(logout))
         .layer(session_layer)
         .layer(cors)
+        .layer(middleware::from_fn(logger_middleware))
         .with_state(shared_state);
-
-    let app = Router::new().nest("/api", api_routes);
 
     let ip = Ipv4Addr::new(0, 0, 0, 0);
     let addr = SocketAddr::new(IpAddr::V4(ip), 5000);
+    info!("Starting server...");
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
