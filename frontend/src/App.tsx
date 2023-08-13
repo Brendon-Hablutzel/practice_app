@@ -6,6 +6,7 @@ import { AuthProtected, AuthProvider } from "./Auth";
 import PracticeSessions from "./PracticeSessions";
 import Pieces from "./Pieces";
 import CreateUser from "./CreateUser";
+import "./css/App.css";
 
 function App() {
     return (

@@ -1,0 +1,9 @@
+.message {
+    margin-top: 25px;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 24px;
+    overflow-wrap: break-word;
+    color: slategray;
+    font-weight: bold;
+}

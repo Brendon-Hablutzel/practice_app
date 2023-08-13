@@ -1,6 +1,8 @@
 import { useContext, useState } from "react";
 import { AuthContext } from "./Auth";
 import { useLocation, useNavigate } from "react-router-dom";
+import Navbar from "./Navbar";
+import CredentialForm from "./CredentialForm";
 
 function CreateUser() {
     const [userName, setUserName] = useState("");
@@ -46,22 +48,15 @@ function CreateUser() {
 
     return (
         <div>
+            <Navbar />
             <h1>Create User</h1>
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    placeholder="username"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                />
-                <input
-                    type="password"
-                    placeholder="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-                <input type="submit" />
-            </form>
+            <CredentialForm
+                handleSubmit={handleSubmit}
+                userName={userName}
+                setUserName={setUserName}
+                password={password}
+                setPassword={setPassword}
+            />
         </div>
     );
 }

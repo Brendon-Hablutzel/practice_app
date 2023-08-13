@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Navbar from "./Navbar";
 import { Piece } from "./api-types";
 import { fetchPieces, addPiece } from "./fetch";
+import styles from "./css/Pieces.module.css";
 
 function Pieces() {
     const [composer, setComposer] = useState("");
@@ -50,30 +51,38 @@ function Pieces() {
     return (
         <div>
             <Navbar />
-            <div>Search for or add a piece</div>
-            <form onSubmit={handleSubmit}>
+            <h1>Search for or add pieces</h1>
+            <form onSubmit={handleSubmit} className={styles.piecesForm}>
                 <input
                     type="text"
                     value={composer}
                     onChange={(e) => setComposer(e.target.value)}
-                    placeholder="composer"
+                    placeholder="Composer"
+                    className={styles.textInput}
                 />
                 <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="title"
+                    placeholder="Title"
+                    className={styles.textInput}
                 />
-                <input type="submit" />
+                <input
+                    type="submit"
+                    value="Add Piece"
+                    className={styles.submitButton}
+                />
             </form>
 
-            {matchingPieces.map((piece) => {
-                return (
-                    <div key={piece.piece_id}>
-                        {piece.composer}: {piece.title}
-                    </div>
-                );
-            })}
+            <div className={styles.results}>
+                {matchingPieces.map((piece) => {
+                    return (
+                        <div key={piece.piece_id}>
+                            {piece.composer}: {piece.title}
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }

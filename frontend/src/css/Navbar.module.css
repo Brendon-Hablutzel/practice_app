@@ -1,0 +1,24 @@
+body {
+    all: initial;
+    font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
+
+.navbarWrapper {
+    background-color: slategray;
+    height: auto;
+    overflow:hidden;
+}
+
+a, a:visited {
+    padding: 15px;
+    display: block;
+    float: left;
+    color: white;
+    text-decoration: unset;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+a:hover {
+    background-color: gray;
+}

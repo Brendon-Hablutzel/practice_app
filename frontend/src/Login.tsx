@@ -1,6 +1,9 @@
 import { useContext, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "./Auth";
+import Navbar from "./Navbar";
+import CredentialForm from "./CredentialForm";
+import styles from "./css/Login.module.css";
 
 function Login() {
     const [userName, setUserName] = useState("");
@@ -19,6 +22,17 @@ function Login() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (userName === "") {
+            alert("Username is required");
+            return;
+        }
+
+        if (password === "") {
+            alert("Password is required");
+            return;
+        }
+
         auth.login(userName, password, (loginSuccess: boolean) => {
             if (loginSuccess) {
                 setMessage("Login successful, redirecting...");
@@ -37,23 +51,16 @@ function Login() {
 
     return (
         <div>
+            <Navbar />
             <h1>Login</h1>
-            <h3>{message}</h3>
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    placeholder="username"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                />
-                <input
-                    type="password"
-                    placeholder="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-                <input type="submit" />
-            </form>
+            <CredentialForm
+                handleSubmit={handleSubmit}
+                userName={userName}
+                setUserName={setUserName}
+                password={password}
+                setPassword={setPassword}
+            />
+            <div className={styles.message}>{message}</div>
         </div>
     );
 }

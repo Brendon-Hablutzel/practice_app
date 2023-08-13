@@ -2,8 +2,15 @@ import Navbar from "./Navbar";
 
 function Home() {
     return (
-        <div>
-            <h1>Home</h1>
+        <div
+            style={{
+                backgroundImage: `url(violins.jpg)`,
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+                backgroundSize: "cover",
+                height: "100%",
+            }}
+        >
             <Navbar />
         </div>
     );
