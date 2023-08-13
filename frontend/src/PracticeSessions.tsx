@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Navbar from "./Navbar";
 import { Piece, PracticeSession } from "./api-types";
 import {
     addPiece,
     addPiecePracticed,
     addPracticeSession,
+    deletePracticeSession,
     fetchPieces,
     fetchPracticeSessions,
 } from "./fetch";
@@ -71,15 +72,16 @@ function AddPracticeSession({
                             practiceSessionId:
                                 practice_session.practice_session_id,
                         },
-                        () => {},
+                        () => {
+                            setStartDatetime("");
+                            setDurationMins(0);
+                            setInstrument("");
+                            setPiecesPracticed([]);
+                            fetchPracticeSessions(setPracticeSessions, alert);
+                        },
                         alert
                     );
                 }
-                setStartDatetime("");
-                setDurationMins(0);
-                setInstrument("");
-                setPiecesPracticed([]);
-                fetchPracticeSessions(setPracticeSessions, alert);
             },
             alert
         );
@@ -221,6 +223,16 @@ function PracticeSessions() {
         fetchPracticeSessions(setPracticeSessions, alert);
     }, []);
 
+    const handlePracticeSessionDelete = (practiceSession: PracticeSession) => {
+        deletePracticeSession(
+            practiceSession.practice_session_id,
+            () => {
+                fetchPracticeSessions(setPracticeSessions, alert);
+            },
+            alert
+        );
+    };
+
     return (
         <div>
             <Navbar />
@@ -233,6 +245,13 @@ function PracticeSessions() {
                             {practiceSession.duration_mins} mins at{" "}
                             {practiceSession.start_datetime}
                         </h4>
+                        <button
+                            onClick={(e) => {
+                                handlePracticeSessionDelete(practiceSession);
+                            }}
+                        >
+                            Remove
+                        </button>
                         <ul>
                             {practiceSession.pieces_practiced.map((piece) => {
                                 return (

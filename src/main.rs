@@ -147,21 +147,32 @@ async fn create_practice_session(
 async fn delete_practice_session(
     State(state): State<Arc<AppState>>,
     session: ReadableSession,
-    Path(pratice_session_id): Path<i32>,
+    Path(practice_session_id): Path<i32>,
 ) -> Result<Json<Value>, AppError> {
     let current_user_id = get_user_id!(session)?;
 
     let mut conn = get_db_conn!(state)?;
 
+    // delete the pieces practiced mappings that link to this practice session first...
+    let _practice_session_id: i32 =
+        verify_practice_session_ownership(&mut conn, practice_session_id, current_user_id)?;
+
+    let pieces_practiced_deleted: usize = map_backend_err!(diesel::delete(
+        pieces_practiced::table
+            .filter(pieces_practiced::practice_session_id.eq(practice_session_id))
+    )
+    .execute(&mut conn))?;
+
+    // ...then delete practice session itself
     let rows_deleted: usize = map_backend_err!(diesel::delete(
         practice_sessions::table
             .filter(practice_sessions::user_id.eq(current_user_id))
-            .filter(practice_sessions::practice_session_id.eq(pratice_session_id))
+            .filter(practice_sessions::practice_session_id.eq(practice_session_id))
     )
     .execute(&mut conn))?;
 
     Ok(Json(
-        json!({ "success": rows_deleted > 0, "num_deleted": rows_deleted }),
+        json!({ "success": rows_deleted > 0, "num_deleted": rows_deleted, "pieces_practiced_mappings_deleted": pieces_practiced_deleted }),
     ))
 }
 
@@ -432,7 +443,7 @@ async fn main() {
     let frontend_url = env::var("FRONTEND_URL").expect("FRONTEND_URL env var should be set");
 
     let cors = CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST])
+        .allow_methods([Method::GET, Method::POST, Method::DELETE])
         .allow_headers([CONTENT_TYPE])
         .allow_credentials(true)
         .allow_origin(frontend_url.parse::<HeaderValue>().unwrap());

@@ -13,6 +13,12 @@ type PostFn<InputDataType, ResponseDataType> = (
     errorCallback: ErrorHandler
 ) => Promise<void>;
 
+type DeleteFn = (
+    resource_id: number,
+    successCallback: () => void,
+    errorCallback: ErrorHandler
+) => Promise<void>;
+
 const getRootURL = (): string => {
     const env = process.env.NODE_ENV;
     if (env === "production") {
@@ -139,6 +145,29 @@ const addPiecePracticed: PostFn<
     }
 };
 
+const deletePracticeSession: DeleteFn = async (
+    practice_session_id,
+    successCallback,
+    errorCallback
+) => {
+    let res = await fetch(
+        getRootURL() + "/api/delete_practice_session/" + practice_session_id,
+        {
+            mode: "cors",
+            credentials: "include",
+            method: "DELETE",
+        }
+    );
+
+    let content = await res.json();
+
+    if (content.success) {
+        successCallback();
+    } else {
+        errorCallback("Failed to delete practice session: " + content.error);
+    }
+};
+
 export {
     fetchPieces,
     addPiece,
@@ -146,4 +175,5 @@ export {
     addPracticeSession,
     addPiecePracticed,
     getRootURL,
+    deletePracticeSession,
 };
