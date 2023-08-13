@@ -5,6 +5,7 @@ import Logout from "./Logout";
 import { AuthProtected, AuthProvider } from "./Auth";
 import PracticeSessions from "./PracticeSessions";
 import Pieces from "./Pieces";
+import CreateUser from "./CreateUser";
 
 function App() {
     return (
@@ -13,6 +14,7 @@ function App() {
                 <Routes>
                     <Route path="/login" Component={Login} />
                     <Route path="/logout" Component={Logout} />
+                    <Route path="/create-user" Component={CreateUser} />
                     <Route
                         path="/practice-sessions"
                         element={

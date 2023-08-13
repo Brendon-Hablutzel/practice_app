@@ -1,32 +1,41 @@
 import { useContext, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "./Auth";
+import { useLocation, useNavigate } from "react-router-dom";
 
-function Login() {
+function CreateUser() {
     const [userName, setUserName] = useState("");
     const [password, setPassword] = useState("");
     const auth = useContext(AuthContext);
     const navigate = useNavigate();
     const location = useLocation();
 
-    let from: string = location?.state?.from?.pathname || "/";
-
-    const [message, setMessage] = useState(
-        from === "/"
-            ? "Please enter your login credentials"
-            : "You must log in to view that page"
-    );
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        auth.login(userName, password, (loginSuccess: boolean) => {
-            if (loginSuccess) {
-                setMessage("Login successful, redirecting...");
-                navigate(from, {
-                    replace: true,
+
+        if (userName === "") {
+            alert("Invalid username");
+            return;
+        }
+
+        if (password === "") {
+            alert("Invalid password");
+            return;
+        }
+
+        auth.createUser(userName, password, (success) => {
+            if (success) {
+                auth.login(userName, password, (success) => {
+                    if (success) {
+                        navigate("/", {
+                            replace: true,
+                            state: { from: location },
+                        });
+                    } else {
+                        alert("Failed to log in after user creation");
+                    }
                 });
             } else {
-                setMessage("Unable to log in");
+                alert("Unable to create account");
             }
         });
     };
@@ -37,8 +46,7 @@ function Login() {
 
     return (
         <div>
-            <h1>Login</h1>
-            <h3>{message}</h3>
+            <h1>Create User</h1>
             <form onSubmit={handleSubmit}>
                 <input
                     type="text"
@@ -58,4 +66,4 @@ function Login() {
     );
 }
 
-export default Login;
+export default CreateUser;

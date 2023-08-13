@@ -15,6 +15,11 @@ interface AuthContextType {
         callback: (loginSuccess: boolean) => void
     ) => void;
     logout: (callback: (logoutSuceess: boolean) => void) => void;
+    createUser: (
+        userName: string,
+        password: string,
+        callback: (creationSuccess: boolean) => void
+    ) => void;
 }
 
 const AuthContext = createContext<AuthContextType>(null!);
@@ -31,6 +36,29 @@ const getUser = () => {
 };
 
 const removeUser = () => localStorage.removeItem("user");
+
+const createUser = (
+    userName: string,
+    password: string,
+    callback: (creationSuccess: boolean) => void
+) => {
+    fetch(getRootURL() + "/api/create_user", {
+        mode: "cors",
+        credentials: "include",
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            user_name: userName,
+            password: password,
+        }),
+    })
+        .then((res) => res.json())
+        .then((content) => {
+            callback(content.success);
+        });
+};
 
 const login = (
     userName: string,
@@ -77,7 +105,7 @@ const logout = (callback: (logoutSuccess: boolean) => void) => {
 
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return (
-        <AuthContext.Provider value={{ getUser, login, logout }}>
+        <AuthContext.Provider value={{ getUser, login, logout, createUser }}>
             {children}
         </AuthContext.Provider>
     );
