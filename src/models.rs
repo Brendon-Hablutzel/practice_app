@@ -80,7 +80,7 @@ impl Display for Piece {
     }
 }
 
-#[derive(Insertable, Deserialize)]
+#[derive(Insertable, Deserialize, PartialEq)]
 #[diesel(table_name = pieces)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewPiece {
