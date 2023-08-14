@@ -265,33 +265,45 @@ function PracticeSessions() {
         <div>
             <Navbar />
             <AddPracticeSession setPracticeSessions={setPracticeSessions} />
-            {practiceSessions.map((practiceSession) => {
-                return (
-                    <div>
-                        <h4>
-                            Practiced {practiceSession.instrument} for{" "}
-                            {practiceSession.duration_mins} mins at{" "}
-                            {practiceSession.start_datetime}
-                        </h4>
-                        <button
-                            onClick={(e) => {
-                                handlePracticeSessionDelete(practiceSession);
-                            }}
-                        >
-                            Remove
-                        </button>
-                        <ul>
-                            {practiceSession.pieces_practiced.map((piece) => {
-                                return (
-                                    <li>
-                                        {piece.composer}: {piece.title}
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    </div>
-                );
-            })}
+            <div className={styles.practiceSessionsContainer}>
+                <div style={{ width: "50%" }}>
+                    {practiceSessions.map((practiceSession) => {
+                        return (
+                            <div className={styles.practiceSession}>
+                                <div className={styles.practiceSessionHeader}>
+                                    Practiced {practiceSession.instrument} for{" "}
+                                    {practiceSession.duration_mins} mins at{" "}
+                                    {practiceSession.start_datetime}
+                                </div>
+                                <ul>
+                                    {practiceSession.pieces_practiced.map(
+                                        (piece) => {
+                                            return (
+                                                <li>
+                                                    {piece.composer}:{" "}
+                                                    {piece.title}
+                                                </li>
+                                            );
+                                        }
+                                    )}
+                                </ul>
+                                <button
+                                    onClick={(e) => {
+                                        handlePracticeSessionDelete(
+                                            practiceSession
+                                        );
+                                    }}
+                                    className={
+                                        styles.removePracticeSessionButton
+                                    }
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
         </div>
     );
 }

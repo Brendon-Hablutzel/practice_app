@@ -65,3 +65,43 @@
     background-color: slategray;
     cursor: pointer;
 }
+
+.practiceSessionsContainer {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.practiceSession {
+    border: 1px solid slategray;
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+
+.practiceSessionHeader {
+    color: slategray;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.practiceSession > ul > li {
+    font-size: 20px;
+}
+
+.removePracticeSessionButton {
+    all: unset;
+    border: 1px solid slategray;
+    border-radius: 5px;
+    font-size: 16px;
+    color: slategray;
+    padding: 3px;
+}
+
+.removePracticeSessionButton:hover {
+    cursor: pointer;
+    background-color: gray;
+    color: white
+}
