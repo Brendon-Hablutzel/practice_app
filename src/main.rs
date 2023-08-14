@@ -180,7 +180,7 @@ async fn delete_practice_session(
 struct GetPiecesQueryParams {
     piece_id: Option<i32>,
     title: Option<String>,    // match containing
-    composer: Option<String>, // match exact
+    composer: Option<String>, // match containing
 }
 
 async fn get_pieces(
@@ -200,7 +200,7 @@ async fn get_pieces(
     }
 
     if let Some(composer) = &query_params.composer {
-        query = query.filter(pieces::title.ilike(composer))
+        query = query.filter(pieces::composer.ilike(format!("%{}%", composer)));
     }
 
     let pieces: Vec<Piece> = map_backend_err!(query.load::<Piece>(&mut conn))?;

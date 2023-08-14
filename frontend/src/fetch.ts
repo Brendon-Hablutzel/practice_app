@@ -20,19 +20,25 @@ type DeleteFn = (
 ) => Promise<void>;
 
 const getRootURL = (): string => {
-    const env = process.env.NODE_ENV;
-    if (env === "production") {
-        return process.env.REACT_APP_API_URL || "";
-    } else {
-        return "";
-    }
+    return process.env.REACT_APP_API_URL || "";
 };
 
-const fetchPieces: FetchFn<Piece[]> = async (
-    successCallback,
-    errorCallback
+const fetchPieces = async (
+    successCallback: (responseData: Piece[]) => void,
+    errorCallback: ErrorHandler,
+    searchParams?: { composer?: string; title?: string }
 ) => {
-    let res = await fetch(getRootURL() + "/api/get_pieces", {
+    let url = new URL("/api/get_pieces", getRootURL());
+
+    if (searchParams?.composer) {
+        url.searchParams.append("composer", searchParams.composer);
+    }
+
+    if (searchParams?.title) {
+        url.searchParams.append("title", searchParams.title);
+    }
+
+    let res = await fetch(url, {
         mode: "cors",
         credentials: "include",
     });

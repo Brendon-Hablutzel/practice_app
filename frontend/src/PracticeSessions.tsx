@@ -29,21 +29,18 @@ function AddPracticeSession({
     const piecesDialogRef = useRef<HTMLDialogElement>(null);
 
     const [pieces, setPieces] = useState<Piece[]>([]);
-    const [matchingPieces, setMatchingPieces] = useState<Piece[]>([]);
 
     useEffect(() => {
-        fetchPieces(setPieces, alert);
-    }, []);
-
-    useEffect(() => {
-        setMatchingPieces(
-            pieces.filter(
-                (piece) =>
-                    piece.title.includes(title) &&
-                    piece.composer.includes(composer)
-            )
-        );
-    }, [composer, title, pieces]);
+        let searchParams = {
+            composer: composer !== "" ? composer : undefined,
+            title: title !== "" ? title : undefined,
+        };
+        if (!(searchParams.composer || searchParams.title)) {
+            setPieces([]);
+        } else {
+            fetchPieces(setPieces, alert, searchParams);
+        }
+    }, [title, composer]);
 
     const handlePracticeSessionSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -198,7 +195,7 @@ function AddPracticeSession({
                         className={styles.submitButton}
                     />
                 </form>
-                {matchingPieces.map((piece) => {
+                {pieces.map((piece) => {
                     if (piecesPracticed.includes(piece)) {
                         return (
                             <div key={piece.piece_id}>

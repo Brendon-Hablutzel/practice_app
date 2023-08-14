@@ -8,21 +8,18 @@ function Pieces() {
     const [composer, setComposer] = useState("");
     const [title, setTitle] = useState("");
     const [pieces, setPieces] = useState<Piece[]>([]);
-    const [matchingPieces, setMatchingPieces] = useState<Piece[]>([]);
 
     useEffect(() => {
-        fetchPieces(setPieces, alert);
-    }, []);
-
-    useEffect(() => {
-        setMatchingPieces(
-            pieces.filter(
-                (piece) =>
-                    piece.title.includes(title) &&
-                    piece.composer.includes(composer)
-            )
-        );
-    }, [composer, title, pieces]);
+        let searchParams = {
+            composer: composer !== "" ? composer : undefined,
+            title: title !== "" ? title : undefined,
+        };
+        if (!(searchParams.composer || searchParams.title)) {
+            setPieces([]);
+        } else {
+            fetchPieces(setPieces, alert, searchParams);
+        }
+    }, [title, composer]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -75,7 +72,7 @@ function Pieces() {
             </form>
 
             <div className={styles.results}>
-                {matchingPieces.map((piece) => {
+                {pieces.map((piece) => {
                     return (
                         <div key={piece.piece_id}>
                             {piece.composer}: {piece.title}
