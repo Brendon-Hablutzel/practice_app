@@ -6,6 +6,7 @@ use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
 use diesel::result::Error;
 use diesel::{pg::PgConnection, r2d2::Pool};
+use log::error;
 use models::{NewPracticeSession, Piece, PracticeSession};
 use schema::practice_sessions;
 use serde::{Deserialize, Serialize};
@@ -67,7 +68,7 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         match self {
             AppError::BackendError(info) => {
-                println!("SERVER ERROR: {info}");
+                error!("SERVER ERROR: {info}");
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(json!({"success": false, "error": "Server error"})),
