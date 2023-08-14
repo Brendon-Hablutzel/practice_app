@@ -7,7 +7,7 @@ use diesel::r2d2::ConnectionManager;
 use diesel::result::Error;
 use diesel::{pg::PgConnection, r2d2::Pool};
 use log::error;
-use models::{NewPracticeSession, Piece, PracticeSession};
+use models::{InsertablePracticeSession, Piece, PracticeSession};
 use schema::practice_sessions;
 use serde::{Deserialize, Serialize};
 pub mod models;
@@ -104,16 +104,16 @@ impl IntoResponse for AppError {
 }
 
 #[derive(Deserialize)]
-pub struct IncompleteNewPracticeSession {
+pub struct NewPracticeSessionData {
     pub start_datetime: chrono::NaiveDateTime,
     pub duration_mins: u32,
     pub instrument: String,
     pub pieces_practiced: Vec<Piece>,
 }
 
-impl IncompleteNewPracticeSession {
-    pub fn make_insertable(&self, user_id: i32) -> Result<NewPracticeSession, AppError> {
-        Ok(NewPracticeSession {
+impl NewPracticeSessionData {
+    pub fn make_insertable(&self, user_id: i32) -> Result<InsertablePracticeSession, AppError> {
+        Ok(InsertablePracticeSession {
             start_datetime: self.start_datetime,
             duration_mins: i32::try_from(self.duration_mins).map_err(|_| {
                 AppError::ClientError("Invalid practice session duration".to_owned())

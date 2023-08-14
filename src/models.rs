@@ -53,7 +53,7 @@ impl Display for PracticeSession {
 #[derive(Insertable, Deserialize)]
 #[diesel(table_name = practice_sessions)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct NewPracticeSession {
+pub struct InsertablePracticeSession {
     pub start_datetime: chrono::NaiveDateTime,
     pub duration_mins: i32,
     pub instrument: String,
@@ -83,7 +83,7 @@ impl Display for Piece {
 #[derive(Insertable, Deserialize, PartialEq)]
 #[diesel(table_name = pieces)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct NewPiece {
+pub struct InsertablePiece {
     pub title: String,
     pub composer: String,
 }

@@ -20,7 +20,7 @@ use log::info;
 use practice_app::schema::{pieces, pieces_practiced, practice_sessions, users};
 use practice_app::{
     get_connection_pool, get_db_conn, get_user_id, map_backend_err, models::*,
-    verify_practice_session_ownership, AppError, Credentials, IncompleteNewPracticeSession,
+    verify_practice_session_ownership, AppError, Credentials, NewPracticeSessionData,
     PracticeSessionWithPieces,
 };
 use rand::{Rng, RngCore};
@@ -123,7 +123,7 @@ async fn get_practice_sessions(
 async fn create_practice_session(
     State(state): State<Arc<AppState>>,
     session: ReadableSession,
-    Json(practice_session_data): Json<IncompleteNewPracticeSession>,
+    Json(practice_session_data): Json<NewPracticeSessionData>,
 ) -> Result<Json<Value>, AppError> {
     let current_user_id = get_user_id!(session)?;
 
@@ -232,7 +232,7 @@ async fn get_pieces(
 async fn create_piece(
     State(state): State<Arc<AppState>>,
     session: ReadableSession,
-    Json(new_piece): Json<NewPiece>,
+    Json(new_piece): Json<InsertablePiece>,
 ) -> Result<Json<Value>, AppError> {
     // don't need user id to insert a piece into db, but this checks to make sure user is logged in
     // (don't want users to be able to create pieces without being logged in)

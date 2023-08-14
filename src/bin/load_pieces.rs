@@ -1,5 +1,5 @@
 use diesel::*;
-use practice_app::{establish_connection, models::NewPiece, schema::pieces};
+use practice_app::{establish_connection, models::InsertablePiece, schema::pieces};
 use reqwest;
 use serde::Deserialize;
 
@@ -33,7 +33,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let pieces: Vec<NewPiece> = body
+    let pieces: Vec<InsertablePiece> = body
         .composers
         .into_iter()
         .filter(|composer| composer.popular == "1")
@@ -41,11 +41,11 @@ async fn main() {
             composer
                 .works
                 .into_iter()
-                .map(|work| NewPiece {
+                .map(|work| InsertablePiece {
                     composer: composer.complete_name.clone(),
                     title: work.title,
                 })
-                .collect::<Vec<NewPiece>>()
+                .collect::<Vec<InsertablePiece>>()
         })
         .flatten()
         .collect();
@@ -55,7 +55,7 @@ async fn main() {
         .enumerate()
         .filter(|(index, piece)| *index == pieces.iter().position(|x| x == *piece).unwrap())
         .map(|(_, piece)| piece)
-        .collect::<Vec<&NewPiece>>();
+        .collect::<Vec<&InsertablePiece>>();
 
     let res = diesel::insert_into(pieces::table)
         .values(non_duplicates)

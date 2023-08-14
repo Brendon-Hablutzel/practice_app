@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 use practice_app::establish_connection;
-use practice_app::models::{NewPiece, Piece};
+use practice_app::models::{InsertablePiece, Piece};
 use practice_app::schema::pieces;
 use std::env;
 
@@ -9,7 +9,7 @@ fn main() {
 
     args.next(); // skip first
 
-    let new_piece = NewPiece {
+    let new_piece = InsertablePiece {
         title: args.next().unwrap(),
         composer: args.next().unwrap(),
     };
