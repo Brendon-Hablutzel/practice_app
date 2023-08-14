@@ -3,7 +3,6 @@ import Navbar from "./Navbar";
 import { Piece, PracticeSession } from "./api-types";
 import {
     addPiece,
-    addPiecePracticed,
     addPracticeSession,
     deletePracticeSession,
     fetchPieces,
@@ -61,25 +60,13 @@ function AddPracticeSession({
         }
 
         addPracticeSession(
-            { startDatetime, durationMins, instrument },
-            (practice_session) => {
-                for (let piece of piecesPracticed) {
-                    addPiecePracticed(
-                        {
-                            pieceId: piece.piece_id,
-                            practiceSessionId:
-                                practice_session.practice_session_id,
-                        },
-                        () => {
-                            setStartDatetime("");
-                            setDurationMins(0);
-                            setInstrument("");
-                            setPiecesPracticed([]);
-                            fetchPracticeSessions(setPracticeSessions, alert);
-                        },
-                        alert
-                    );
-                }
+            { startDatetime, durationMins, instrument, piecesPracticed },
+            (_) => {
+                setStartDatetime("");
+                setDurationMins(0);
+                setInstrument("");
+                setPiecesPracticed([]);
+                fetchPracticeSessions(setPracticeSessions, alert);
             },
             alert
         );
@@ -279,7 +266,7 @@ function PracticeSessions() {
                                     {practiceSession.pieces_practiced.map(
                                         (piece) => {
                                             return (
-                                                <li>
+                                                <li key={piece.piece_id}>
                                                     {piece.composer}:{" "}
                                                     {piece.title}
                                                 </li>

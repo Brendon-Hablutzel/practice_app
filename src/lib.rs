@@ -108,6 +108,7 @@ pub struct IncompleteNewPracticeSession {
     pub start_datetime: chrono::NaiveDateTime,
     pub duration_mins: u32,
     pub instrument: String,
+    pub pieces_practiced: Vec<Piece>,
 }
 
 impl IncompleteNewPracticeSession {

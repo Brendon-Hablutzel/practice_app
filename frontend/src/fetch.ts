@@ -1,4 +1,4 @@
-import { Piece, PiecePracticedMapping, PracticeSession } from "./api-types";
+import { Piece, PracticeSession } from "./api-types";
 
 type ErrorHandler = (error: string) => void;
 
@@ -96,6 +96,7 @@ const addPracticeSession: PostFn<
         startDatetime: string;
         durationMins: number;
         instrument: string;
+        piecesPracticed: Piece[];
     },
     PracticeSession
 > = async (practiceSession, successCallback, errorCallback) => {
@@ -110,6 +111,7 @@ const addPracticeSession: PostFn<
             start_datetime: practiceSession.startDatetime + ":00",
             duration_mins: practiceSession.durationMins,
             instrument: practiceSession.instrument,
+            pieces_practiced: practiceSession.piecesPracticed,
         }),
     });
 
@@ -118,36 +120,6 @@ const addPracticeSession: PostFn<
         successCallback(content.practice_session);
     } else {
         errorCallback("Failed to add practice session: " + content.error);
-    }
-};
-
-const addPiecePracticed: PostFn<
-    {
-        practiceSessionId: number;
-        pieceId: number;
-    },
-    PiecePracticedMapping
-> = async (piece_practiced_mapping, successCallback, errorCallback) => {
-    let res = await fetch(getRootURL() + "/api/create_piece_practiced", {
-        mode: "cors",
-        credentials: "include",
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            practice_session_id: piece_practiced_mapping.practiceSessionId,
-            piece_id: piece_practiced_mapping.pieceId,
-        }),
-    });
-
-    let content = await res.json();
-    if (content.success) {
-        successCallback(content.piece_practiced);
-    } else {
-        errorCallback(
-            "Failed to add piece practiced mapping: " + content.error
-        );
     }
 };
 
@@ -179,7 +151,6 @@ export {
     addPiece,
     fetchPracticeSessions,
     addPracticeSession,
-    addPiecePracticed,
     getRootURL,
     deletePracticeSession,
 };

@@ -139,9 +139,30 @@ async fn create_practice_session(
             _ => AppError::BackendError(e.to_string()),
         })?;
 
-    Ok(Json(
-        json!({ "success": true, "practice_session": inserted_practice_session }),
-    ))
+    let pieces_practiced_mappings: Vec<PiecePracticedMapping> = practice_session_data
+        .pieces_practiced
+        .iter()
+        .map(|piece| PiecePracticedMapping {
+            practice_session_id: inserted_practice_session.practice_session_id,
+            piece_id: piece.piece_id,
+        })
+        .collect();
+
+    let pieces_practiced_inserted = diesel::insert_into(pieces_practiced::table)
+        .values(pieces_practiced_mappings)
+        .get_results::<PiecePracticedMapping>(&mut conn)
+        .map_err(|e| match e {
+            DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
+                AppError::Conflict("That piece practiced mapping already exists".to_string())
+            }
+            _ => AppError::BackendError(e.to_string()),
+        })?;
+
+    Ok(Json(json!({
+        "success": true,
+        "practice_session": inserted_practice_session,
+        "pieces_practiced": pieces_practiced_inserted
+    })))
 }
 
 async fn delete_practice_session(
@@ -251,7 +272,7 @@ async fn delete_piece(
 async fn create_piece_practiced(
     State(state): State<Arc<AppState>>,
     session: ReadableSession,
-    Json(piece_practiced_mapping): Json<NewPiecePracticedMapping>,
+    Json(piece_practiced_mapping): Json<PiecePracticedMapping>,
 ) -> Result<Json<Value>, AppError> {
     let current_user_id = get_user_id!(session)?;
 

@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 use practice_app::establish_connection;
-use practice_app::models::{NewPiecePracticedMapping, PiecePracticedMapping};
+use practice_app::models::PiecePracticedMapping;
 use practice_app::schema::pieces_practiced;
 use std::env;
 
@@ -9,7 +9,7 @@ fn main() {
 
     args.next();
 
-    let mapping = NewPiecePracticedMapping {
+    let mapping = PiecePracticedMapping {
         practice_session_id: args.next().unwrap().parse().unwrap(),
         piece_id: args.next().unwrap().parse().unwrap(),
     };

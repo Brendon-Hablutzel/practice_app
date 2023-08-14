@@ -60,7 +60,7 @@ pub struct NewPracticeSession {
     pub user_id: i32,
 }
 
-#[derive(Queryable, Selectable, Serialize, Identifiable)]
+#[derive(Queryable, Selectable, Serialize, Identifiable, Deserialize)]
 #[diesel(table_name = pieces)]
 #[diesel(primary_key(piece_id))]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -88,7 +88,7 @@ pub struct NewPiece {
     pub composer: String,
 }
 
-#[derive(Queryable, Selectable, Serialize, Associations, Identifiable)]
+#[derive(Queryable, Selectable, Serialize, Associations, Identifiable, Insertable, Deserialize)]
 #[diesel(primary_key(practice_session_id, piece_id))]
 #[diesel(belongs_to(PracticeSession))]
 #[diesel(belongs_to(Piece))]
@@ -107,12 +107,4 @@ impl Display for PiecePracticedMapping {
             self.practice_session_id, self.piece_id
         )
     }
-}
-
-#[derive(Insertable, Deserialize)]
-#[diesel(table_name = pieces_practiced)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct NewPiecePracticedMapping {
-    pub practice_session_id: i32,
-    pub piece_id: i32,
 }
