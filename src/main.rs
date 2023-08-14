@@ -90,8 +90,9 @@ async fn get_practice_sessions(
         query = query.filter(practice_sessions::instrument.eq(instrument));
     }
 
-    let practice_sessions: Vec<PracticeSession> =
-        map_backend_err!(query.load::<PracticeSession>(&mut conn))?;
+    let practice_sessions: Vec<PracticeSession> = map_backend_err!(query
+        .order(practice_sessions::start_datetime.desc())
+        .load::<PracticeSession>(&mut conn))?;
 
     // get the pieces practiced in the above practice sessions
     let pieces_practiced: Vec<Vec<(PiecePracticedMapping, Piece)>> =
